@@ -16,6 +16,7 @@ dwell_start = None
 last_click_time = 0
 cooldown = 1.0  # วินาที
 prev_x, prev_y = 0, 0
+swipe_cooldown = 0
 
 while True:
     success, img = cap.read()
@@ -50,17 +51,39 @@ while True:
             center_x = int(index.x * w)
             center_y = int(index.y * h)
 
+            # ===== Swipe Logic =====
+            current_y = center_y
+            delta_y = current_y - prev_y
+            now = time.time()
+
+            is_swiping = False
+
+            # ต้องเร็วจริง ถึงจะ swipe
+            if abs(delta_y) > 60 and now - swipe_cooldown > 0.5:
+                is_swiping = True
+                
+                if delta_y > 0:
+                    pyautogui.scroll(-500)
+                else:
+                    pyautogui.scroll(500)
+
+                swipe_cooldown = now
+
             movement = abs(center_x - prev_x) + abs(center_y - prev_y)
             
-            # ถ้ามือขยับมาก → reset
-            if movement > 20:
+            #ถ้ากำลัง swipe ไม่ต้องนับ dwell
+            if is_swiping:
                 dwell_start = None
 
-            # เริ่มจับเวลาเมื่อ "นิ่ง"
-            if dwell_start is None:
-                dwell_start = time.time()
+            else:
+                # ถ้านิ่งจริงถึงนับ
+                if movement < 20:
+                    if dwell_start is None:
+                        dwell_start = time.time()
+                else:
+                    dwell_start = None
 
-            dwell_time = time.time() - dwell_start
+            dwell_time = time.time() - dwell_start if dwell_start else 0
 
             prev_x, prev_y = center_x, center_y
             print("dwell:", dwell_time)
