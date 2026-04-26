@@ -7,7 +7,9 @@ from gestures.pinch import is_pinch
 from gestures.dwell import update_dwell
 from gestures.swipe import detect_swipe
 from controller.actions import move_cursor, click, double_click, swipe_action
-from config import DWELL_TIME, ACTION_COOLDOWN
+from config import DWELL_TIME, ACTION_COOLDOWN, FIST_HOLD_TIME
+from gestures.activation import is_open_palm
+from gestures.deactivation import is_fist
 
 cap = cv2.VideoCapture(0)
 screen_w, screen_h = pyautogui.size()
@@ -15,6 +17,12 @@ screen_w, screen_h = pyautogui.size()
 clicking = False
 dwell_start = None
 last_action_time = 0
+
+# เริ่มต้น/ปิดระบบมือ
+system_active = False
+activation_start = None
+last_hand_seen = time.time()
+fist_start = None
 
 prev_x, prev_y = 0, 0
 swipe_cooldown = 0
@@ -36,6 +44,77 @@ while True:
 
             thumb = handLms.landmark[4]
             index = handLms.landmark[8]
+            
+            # ===== Deactivation Logic =====
+            last_hand_seen = time.time()
+
+            if system_active:
+                if is_fist(handLms):
+                    if fist_start is None:
+                        fist_start = time.time()
+
+                    fist_time = time.time() - fist_start
+
+                    cv2.putText(
+                        img,
+                        f"Hold fist to deactivate: {round(fist_time,1)}s",
+                        (30, 90),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        1,
+                        (0, 0, 255),
+                        2
+                    )
+
+                    if fist_time > FIST_HOLD_TIME:
+                        system_active = False
+                        fist_start = None
+                        dwell_start = None
+                        activation_start = None
+                        clicking = False
+
+                        cv2.putText(
+                            img,
+                            "System Deactivated",
+                            (30, 130),
+                            cv2.FONT_HERSHEY_SIMPLEX,
+                            1,
+                            (0, 0, 255),
+                            2
+                        )
+
+                        continue
+
+                else:
+                    fist_start = None
+            
+            # ===== Activation Logic =====
+            active_gesture = is_open_palm(handLms)
+
+            if not system_active:
+                if active_gesture:
+                    if activation_start is None:
+                        activation_start = time.time()
+
+                    activation_time = time.time() - activation_start
+
+                    cv2.putText(
+                        img,
+                        f"Hold to activate: {round(activation_time,1)}s",
+                        (30, 50),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        1,
+                        (0, 255, 255),
+                        2
+                    )
+
+                    if activation_time > 3:
+                        system_active = True
+                        activation_start = None
+
+                else:
+                    activation_start = None
+
+                continue
 
             screen_x = int(index.x * screen_w)
             screen_y = int(index.y * screen_h)
@@ -93,8 +172,22 @@ while True:
             )
 
     else:
-        dwell_start = None
-        clicking = False
+        if time.time() - last_hand_seen > 3.0:
+            system_active = False
+            dwell_start = None
+            clicking = False
+            fist_start = None
+            activation_start = None
+
+            cv2.putText(
+                img,
+                "No hand detected - system off",
+                (30, 50),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                1,
+                (0, 0, 255),
+                2
+            )
 
     cv2.imshow("Zero Touch Demo", img)
 
