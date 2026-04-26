@@ -1,7 +1,7 @@
 import pyautogui
 
 def move_cursor(x, y):
-    pyautogui.moveTo(x, y)
+    pyautogui.moveTo(x, y, duration=0)
 
 def click():
     pyautogui.click()

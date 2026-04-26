@@ -7,13 +7,17 @@ from gestures.pinch import is_pinch
 from gestures.dwell import update_dwell
 from gestures.swipe import detect_swipe
 from controller.actions import move_cursor, click, double_click, swipe_action
-from config import DWELL_TIME, ACTION_COOLDOWN, FIST_HOLD_TIME
+from config import DWELL_TIME, ACTION_COOLDOWN, FIST_HOLD_TIME, SMOOTHING
 from gestures.activation import is_open_palm
 from gestures.deactivation import is_fist
+
+pyautogui.PAUSE = 0
+pyautogui.FAILSAFE = False
 
 cap = cv2.VideoCapture(0)
 screen_w, screen_h = pyautogui.size()
 
+pinch_lock_x, pinch_lock_y = None, None
 clicking = False
 dwell_start = None
 last_action_time = 0
@@ -26,6 +30,7 @@ fist_start = None
 
 prev_x, prev_y = 0, 0
 swipe_cooldown = 0
+smooth_screen_x, smooth_screen_y = 0, 0
 
 while True:
     success, img = cap.read()
@@ -34,6 +39,7 @@ while True:
         break
 
     img = cv2.flip(img, 1)
+    img = cv2.convertScaleAbs(img, alpha=1.2, beta=20)
     h, w, _ = img.shape
 
     result = detect_hand(img)
@@ -49,7 +55,7 @@ while True:
             last_hand_seen = time.time()
 
             if system_active:
-                if is_fist(handLms):
+                if is_fist(handLms) and not is_pinch(thumb, index):
                     if fist_start is None:
                         fist_start = time.time()
 
@@ -116,10 +122,26 @@ while True:
 
                 continue
 
-            screen_x = int(index.x * screen_w)
-            screen_y = int(index.y * screen_h)
+            raw_x = int(index.x * screen_w)
+            raw_y = int(index.y * screen_h)
 
-            move_cursor(screen_x, screen_y)
+            # วัดความเร็วการเคลื่อนที่
+            speed = abs(raw_x - smooth_screen_x) + abs(raw_y - smooth_screen_y)
+
+            # ปรับ smoothing ตาม speed
+            if speed > 50:
+                alpha = 0.5   # เร็ว
+            elif speed > 20:
+                alpha = 0.35  # กลาง
+            else:
+                alpha = 0.2   # นิ่ง
+
+            smooth_screen_x = int(alpha * raw_x + (1 - alpha) * smooth_screen_x)
+            smooth_screen_y = int(alpha * raw_y + (1 - alpha) * smooth_screen_y)
+
+            # ===== Cursor Move =====
+            if not is_pinch(thumb, index):
+                move_cursor(smooth_screen_x, smooth_screen_y)
 
             center_x = int(index.x * w)
             center_y = int(index.y * h)
@@ -127,10 +149,16 @@ while True:
             # ===== Pinch Click =====
             if is_pinch(thumb, index):
                 if not clicking:
+                    pinch_lock_x = smooth_screen_x
+                    pinch_lock_y = smooth_screen_y
+
+                    move_cursor(pinch_lock_x, pinch_lock_y)
                     click()
+
                     clicking = True
             else:
                 clicking = False
+                pinch_lock_x, pinch_lock_y = None, None
 
             # ===== Swipe =====
             delta_y = center_y - prev_y

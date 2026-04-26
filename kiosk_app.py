@@ -1,51 +1,116 @@
 import tkinter as tk
+from tkinter import messagebox
 
-def show_page(title, text):
-    title_label.config(text=title)
-    content_label.config(text=text)
+class ZeroTouchKiosk:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Zero Touch Kiosk")
+        self.root.geometry("1000x650")
+        self.root.configure(bg="#111827")
+
+        self.create_home()
+
+    def clear_screen(self):
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+    def create_home(self):
+        self.clear_screen()
+
+        title = tk.Label(
+            self.root,
+            text="ZERO TOUCH KIOSK",
+            font=("Arial", 38, "bold"),
+            fg="white",
+            bg="#111827"
+        )
+        title.pack(pady=35)
+
+        subtitle = tk.Label(
+            self.root,
+            text="Show palm to activate • Pinch to select • Swipe to navigate",
+            font=("Arial", 16),
+            fg="#d1d5db",
+            bg="#111827"
+        )
+        subtitle.pack(pady=10)
+
+        frame = tk.Frame(self.root, bg="#111827")
+        frame.pack(pady=35)
+
+        self.big_button(frame, "Information", lambda: self.show_page(
+            "Information",
+            "Welcome to the Zero-Touch Kiosk.\n\nThis system lets users control the screen without touching it."
+        ))
+
+        self.big_button(frame, "Map", lambda: self.show_page(
+            "Map",
+            "Building Map\n\n1st Floor: Lobby and Information\n2nd Floor: Service Center\n3rd Floor: Meeting Rooms"
+        ))
+
+        self.big_button(frame, "Queue", lambda: self.show_page(
+            "Queue",
+            "Queue Service\n\nPlease select your service type.\nA001 - General Service\nB001 - Payment\nC001 - Help Desk"
+        ))
+
+        self.big_button(frame, "Help", lambda: self.show_page(
+            "Help",
+            "How to use:\n\n1. Open palm for 3 seconds to activate\n2. Move index finger to control cursor\n3. Pinch to click\n4. Make a fist for 3 seconds to deactivate"
+        ))
+
+    def big_button(self, parent, text, command):
+        btn = tk.Button(
+            parent,
+            text=text,
+            command=command,
+            font=("Arial", 24, "bold"),
+            width=20,
+            height=2,
+            bg="#2563eb",
+            fg="white",
+            activebackground="#1d4ed8",
+            activeforeground="white",
+            relief="flat",
+            cursor="hand2"
+        )
+        btn.pack(pady=12)
+
+    def show_page(self, title_text, body_text):
+        self.clear_screen()
+
+        title = tk.Label(
+            self.root,
+            text=title_text,
+            font=("Arial", 36, "bold"),
+            fg="white",
+            bg="#111827"
+        )
+        title.pack(pady=35)
+
+        body = tk.Label(
+            self.root,
+            text=body_text,
+            font=("Arial", 22),
+            fg="#e5e7eb",
+            bg="#111827",
+            justify="center"
+        )
+        body.pack(pady=40)
+
+        back_btn = tk.Button(
+            self.root,
+            text="Back to Home",
+            command=self.create_home,
+            font=("Arial", 22, "bold"),
+            width=18,
+            height=2,
+            bg="#10b981",
+            fg="white",
+            relief="flat"
+        )
+        back_btn.pack(pady=30)
+
 
 root = tk.Tk()
-root.title("Zero Touch Kiosk")
-root.geometry("900x600")
-root.configure(bg="#111827")
-
-title_label = tk.Label(
-    root,
-    text="ZERO TOUCH KIOSK",
-    font=("Arial", 36, "bold"),
-    fg="white",
-    bg="#111827"
-)
-title_label.pack(pady=30)
-
-content_label = tk.Label(
-    root,
-    text="Use hand gesture to control this kiosk",
-    font=("Arial", 20),
-    fg="#d1d5db",
-    bg="#111827"
-)
-content_label.pack(pady=20)
-
-button_frame = tk.Frame(root, bg="#111827")
-button_frame.pack(pady=30)
-
-buttons = [
-    ("Information", "Welcome", "This kiosk provides touchless information service."),
-    ("Map", "Map", "Showing building map and directions."),
-    ("Queue", "Queue", "Please select service queue."),
-    ("Help", "Help", "Raise your hand and pinch to select a button.")
-]
-
-for text, title, detail in buttons:
-    btn = tk.Button(
-        button_frame,
-        text=text,
-        font=("Arial", 22, "bold"),
-        width=18,
-        height=2,
-        command=lambda t=title, d=detail: show_page(t, d)
-    )
-    btn.pack(pady=10)
-
+app = ZeroTouchKiosk(root)
 root.mainloop()
