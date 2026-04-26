@@ -198,7 +198,7 @@ while True:
                 2
             )
 
-    cv2.imshow("Zero Touch Demo", img)
+    cv2.imshow("Zero Touch", img)
 
     if cv2.waitKey(1) & 0xFF == 27:
         break

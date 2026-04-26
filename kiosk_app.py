@@ -1,15 +1,18 @@
 import tkinter as tk
-from tkinter import messagebox
 import time
 
-class ZeroTouchKiosk:
+
+class ZeroTouchFoodKiosk:
     def __init__(self, root):
         self.root = root
-        self.root.title("Zero Touch Kiosk")
-        self.root.geometry("1000x650")
-        self.root.configure(bg="#111827")
+        self.root.title("Zero Touch Food Kiosk")
+        self.root.attributes("-fullscreen", True)
+        self.root.configure(bg="#f5f5f5")
 
+        self.cart = []
         self.last_action_time = time.time()
+
+        self.root.bind("<Escape>", lambda e: self.root.destroy())
 
         self.create_home()
         self.check_idle()
@@ -20,125 +23,399 @@ class ZeroTouchKiosk:
 
     def create_home(self):
         self.clear_screen()
+        self.last_action_time = time.time()
+
+        self.root.configure(bg="#b91c1c")
 
         title = tk.Label(
             self.root,
-            text="ZERO TOUCH KIOSK",
-            font=("Arial", 38, "bold"),
+            text="ZERO TOUCH\nSELF SERVICE KIOSK",
+            font=("Arial", 48, "bold"),
             fg="white",
-            bg="#111827"
+            bg="#b91c1c",
+            justify="center"
         )
-        title.pack(pady=35)
+        title.pack(pady=120)
 
-        subtitle = tk.Label(
+        start = tk.Button(
             self.root,
-            text="Show palm to activate • Pinch to select • Swipe to navigate",
-            font=("Arial", 16),
-            fg="#d1d5db",
-            bg="#111827"
+            text="PINCH TO START",
+            command=self.page_burgers,
+            font=("Arial", 30, "bold"),
+            width=20,
+            height=2,
+            bg="white",
+            fg="#b91c1c",
+            activebackground="#facc15",
+            activeforeground="#111827",
+            relief="flat"
         )
-        subtitle.pack(pady=10)
+        start.pack(pady=30)
 
-        frame = tk.Frame(self.root, bg="#111827")
-        frame.pack(pady=35)
+        hint = tk.Label(
+            self.root,
+            text="Move cursor • Pinch to select • Swipe to scroll",
+            font=("Arial", 18, "bold"),
+            fg="white",
+            bg="#b91c1c"
+        )
+        hint.pack(pady=20)
 
-        self.big_button(frame, "Information", lambda: self.show_page(
-            "Information",
-            "Welcome to the Zero-Touch Kiosk.\n\nThis system lets users control the screen without touching it."
-        ))
+    def layout(self, title_text):
+        self.clear_screen()
+        self.last_action_time = time.time()
+        self.root.configure(bg="#f5f5f5")
 
-        self.big_button(frame, "Map", lambda: self.show_page(
-            "Map",
-            "Building Map\n\n1st Floor: Lobby and Information\n2nd Floor: Service Center\n3rd Floor: Meeting Rooms"
-        ))
+        header = tk.Frame(self.root, bg="#b91c1c", height=90)
+        header.pack(fill="x")
 
-        self.big_button(frame, "Queue", lambda: self.show_page(
-            "Queue",
-            "Queue Service\n\nPlease select your service type.\nA001 - General Service\nB001 - Payment\nC001 - Help Desk"
-        ))
+        title = tk.Label(
+            header,
+            text=title_text,
+            font=("Arial", 34, "bold"),
+            fg="white",
+            bg="#b91c1c"
+        )
+        title.pack(side="left", padx=35, pady=20)
 
-        self.big_button(frame, "Help", lambda: self.show_page(
-            "Help",
-            "How to use:\n\n1. Open palm for 3 seconds to activate\n2. Move index finger to control cursor\n3. Pinch to click\n4. Make a fist for 3 seconds to deactivate"
-        ))
+        cart_btn = tk.Button(
+            header,
+            text=f"🛒 Cart ({len(self.cart)})",
+            command=self.page_cart,
+            font=("Arial", 20, "bold"),
+            bg="white",
+            fg="#b91c1c",
+            relief="flat",
+            width=14
+        )
+        cart_btn.pack(side="right", padx=80, pady=20)
 
-    def big_button(self, parent, text, command):
-        def wrapped_command():
-            self.last_action_time = time.time()
-            command()
+        body = tk.Frame(self.root, bg="#f5f5f5")
+        body.pack(fill="both", expand=True, padx=60, pady=30)
 
+        sidebar = tk.Frame(body, bg="#111827", width=280)
+        sidebar.pack(side="left", fill="y")
+
+        content = tk.Frame(body, bg="#f5f5f5")
+        content.pack(side="right", fill="both", expand=True)
+
+        self.sidebar_button(sidebar, "🍔 Burgers", self.page_burgers)
+        self.sidebar_button(sidebar, "🥤 Drinks", self.page_drinks)
+        self.sidebar_button(sidebar, "🍟 Combo", self.page_sets)
+        self.sidebar_button(sidebar, "🛒 Cart", self.page_cart)
+        self.sidebar_button(sidebar, "🏠 Home", self.create_home)
+
+        return content
+
+    def sidebar_button(self, parent, text, command):
         btn = tk.Button(
             parent,
             text=text,
-            command=wrapped_command,
-            font=("Arial", 28, "bold"),
-            width=22,
-            height=3,
-            bg="#2563eb",
+            command=command,
+            font=("Arial", 20, "bold"),
+            bg="#111827",
             fg="white",
-            activebackground="#1d4ed8",
-            activeforeground="white",
+            activebackground="#facc15",
+            activeforeground="#111827",
             relief="flat",
-            cursor="hand2"
+            anchor="w",
+            padx=20,
+            height=3
         )
+        btn.pack(fill="x", pady=5)
 
-        def on_enter(e):
-            e.widget.config(bg="#1d4ed8")
+    def make_scroll_area(self, parent):
+        canvas = tk.Canvas(parent, bg="#f5f5f5", highlightthickness=0)
+        canvas.pack(side="left", fill="both", expand=True)
 
-        def on_leave(e):
-            e.widget.config(bg="#2563eb")
+        scrollbar = tk.Scrollbar(parent, orient="vertical", command=canvas.yview)
+        scrollbar.pack(side="right", fill="y")
 
-        btn.bind("<Enter>", on_enter)
-        btn.bind("<Leave>", on_leave)
+        canvas.configure(yscrollcommand=scrollbar.set)
 
-        btn.pack(pady=12)
+        scroll_frame = tk.Frame(canvas, bg="#f5f5f5")
+        canvas_window = canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
 
-    def show_page(self, title_text, body_text):
+        def update_scroll(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+            canvas.itemconfig(canvas_window, width=canvas.winfo_width())
+
+        scroll_frame.bind("<Configure>", update_scroll)
+        canvas.bind("<Configure>", update_scroll)
+
+        def mouse_wheel(event):
+            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+        canvas.bind_all("<MouseWheel>", mouse_wheel)
+
+        return scroll_frame
+
+    def food_card(self, parent, name, price, emoji):
+        card = tk.Frame(
+            parent,
+            bg="white",
+            highlightbackground="#e5e7eb",
+            highlightthickness=2
+        )
+        card.pack(padx=25, pady=18, fill="x")
+
+        icon = tk.Label(
+            card,
+            text=emoji,
+            font=("Arial", 48),
+            bg="white"
+        )
+        icon.pack(side="left", padx=30, pady=25)
+
+        info = tk.Frame(card, bg="white")
+        info.pack(side="left", fill="both", expand=True)
+
+        name_label = tk.Label(
+            info,
+            text=name,
+            font=("Arial", 26, "bold"),
+            fg="#111827",
+            bg="white"
+        )
+        name_label.pack(anchor="w", pady=(25, 5))
+
+        price_label = tk.Label(
+            info,
+            text=f"{price} THB",
+            font=("Arial", 22, "bold"),
+            fg="#b91c1c",
+            bg="white"
+        )
+        price_label.pack(anchor="w")
+
+        add_btn = tk.Button(
+            card,
+            text="ADD",
+            command=lambda: self.add_to_cart(name, price),
+            font=("Arial", 22, "bold"),
+            bg="#b91c1c",
+            fg="white",
+            activebackground="#facc15",
+            activeforeground="#111827",
+            relief="flat",
+            width=8,
+            height=2
+        )
+        add_btn.pack(side="right", padx=30)
+
+    def add_to_cart(self, name, price):
+        self.cart.append((name, price))
+        self.last_action_time = time.time()
+        self.show_added(name)
+
+    def page_burgers(self):
+        content = self.layout("BURGERS")
+        frame = self.make_scroll_area(content)
+
+        self.food_card(frame, "Cheese Burger", 89, "🍔")
+        self.food_card(frame, "Chicken Burger", 79, "🍔")
+        self.food_card(frame, "Double Beef Burger", 129, "🍔")
+        self.food_card(frame, "Fish Burger", 99, "🍔")
+        self.food_card(frame, "Spicy Burger", 109, "🍔")
+
+    def page_drinks(self):
+        content = self.layout("DRINKS")
+        frame = self.make_scroll_area(content)
+
+        self.food_card(frame, "Coke", 35, "🥤")
+        self.food_card(frame, "Sprite", 35, "🥤")
+        self.food_card(frame, "Orange Juice", 45, "🧃")
+        self.food_card(frame, "Water", 20, "💧")
+
+    def page_sets(self):
+        content = self.layout("COMBO SETS")
+        frame = self.make_scroll_area(content)
+
+        self.food_card(frame, "Burger Set", 139, "🍔")
+        self.food_card(frame, "Chicken Set", 149, "🍗")
+        self.food_card(frame, "Family Set", 299, "👨‍👩‍👧")
+        self.food_card(frame, "Snack Set", 99, "🍟")
+        self.food_card(frame, "Party Set", 399, "🎉")
+
+    def page_cart(self):
         self.clear_screen()
+        self.root.configure(bg="#f5f5f5")
+        self.last_action_time = time.time()
+
+        header = tk.Frame(self.root, bg="#b91c1c", height=90)
+        header.pack(fill="x")
+
+        title = tk.Label(
+            header,
+            text="YOUR ORDER",
+            font=("Arial", 34, "bold"),
+            fg="white",
+            bg="#b91c1c"
+        )
+        title.pack(side="left", padx=35, pady=20)
+
+        back = tk.Button(
+            header,
+            text="Back",
+            command=self.page_burgers,
+            font=("Arial", 20, "bold"),
+            bg="white",
+            fg="#b91c1c",
+            relief="flat",
+            width=10
+        )
+        back.pack(side="right", padx=150, pady=20)
+
+        body = tk.Frame(self.root, bg="#f5f5f5")
+        body.pack(fill="both", expand=True, padx=60, pady=40)
+
+        if not self.cart:
+            empty = tk.Label(
+                body,
+                text="Your cart is empty",
+                font=("Arial", 30, "bold"),
+                fg="#6b7280",
+                bg="#f5f5f5"
+            )
+            empty.pack(pady=80)
+            return
+
+        total = 0
+
+        for name, price in self.cart:
+            row = tk.Frame(body, bg="white", highlightbackground="#e5e7eb", highlightthickness=2)
+            row.pack(fill="x", pady=10)
+
+            item = tk.Label(
+                row,
+                text=name,
+                font=("Arial", 24, "bold"),
+                fg="#111827",
+                bg="white"
+            )
+            item.pack(side="left", padx=25, pady=20)
+
+            price_label = tk.Label(
+                row,
+                text=f"{price} THB",
+                font=("Arial", 22, "bold"),
+                fg="#b91c1c",
+                bg="white"
+            )
+            price_label.pack(side="right", padx=25)
+
+            total += price
+
+        total_label = tk.Label(
+            body,
+            text=f"TOTAL: {total} THB",
+            font=("Arial", 34, "bold"),
+            fg="#b91c1c",
+            bg="#f5f5f5"
+        )
+        total_label.pack(pady=25)
+
+        confirm = tk.Button(
+            body,
+            text="CONFIRM ORDER",
+            command=self.confirm_order,
+            font=("Arial", 26, "bold"),
+            bg="#16a34a",
+            fg="white",
+            relief="flat",
+            width=18,
+            height=2
+        )
+        confirm.pack(pady=10)
+
+        clear = tk.Button(
+            body,
+            text="CLEAR CART",
+            command=self.clear_cart,
+            font=("Arial", 22, "bold"),
+            bg="#dc2626",
+            fg="white",
+            relief="flat",
+            width=16,
+            height=2
+        )
+        clear.pack(pady=10)
+
+    def show_added(self, name):
+        popup = tk.Toplevel(self.root)
+        popup.geometry("440x170+450+260")
+        popup.configure(bg="#16a34a")
+        popup.overrideredirect(True)
+
+        label = tk.Label(
+            popup,
+            text=f"ADDED\n{name}",
+            font=("Arial", 24, "bold"),
+            fg="white",
+            bg="#16a34a"
+        )
+        label.pack(expand=True)
+
+        popup.after(700, popup.destroy)
+
+    def confirm_order(self):
+        self.clear_screen()
+        self.root.configure(bg="#b91c1c")
 
         title = tk.Label(
             self.root,
-            text=title_text,
-            font=("Arial", 36, "bold"),
+            text="ORDER CONFIRMED",
+            font=("Arial", 46, "bold"),
             fg="white",
-            bg="#111827"
+            bg="#b91c1c"
         )
-        title.pack(pady=35)
+        title.pack(pady=120)
 
-        body = tk.Label(
+        queue = tk.Label(
             self.root,
-            text=body_text,
-            font=("Arial", 22),
-            fg="#e5e7eb",
-            bg="#111827",
-            justify="center"
+            text="Queue No: A001",
+            font=("Arial", 40, "bold"),
+            fg="#facc15",
+            bg="#b91c1c"
         )
-        body.pack(pady=40)
+        queue.pack(pady=20)
 
-        back_btn = tk.Button(
+        msg = tk.Label(
             self.root,
-            text="Back to Home",
+            text="Thank you for using Zero Touch Kiosk",
+            font=("Arial", 24),
+            fg="white",
+            bg="#b91c1c"
+        )
+        msg.pack(pady=20)
+
+        self.cart = []
+
+        home = tk.Button(
+            self.root,
+            text="BACK TO HOME",
             command=self.create_home,
-            font=("Arial", 22, "bold"),
+            font=("Arial", 24, "bold"),
+            bg="white",
+            fg="#b91c1c",
+            relief="flat",
             width=18,
-            height=2,
-            bg="#10b981",
-            fg="white",
-            relief="flat"
+            height=2
         )
-        back_btn.pack(pady=30)
+        home.pack(pady=40)
+
+    def clear_cart(self):
+        self.cart = []
+        self.page_cart()
 
     def check_idle(self):
-        if time.time() - self.last_action_time > 20:
+        if time.time() - self.last_action_time > 30:
             self.create_home()
             self.last_action_time = time.time()
 
-        self.root.after(1000, self.check_idle)    
-            
+        self.root.after(1000, self.check_idle)
 
 
 root = tk.Tk()
-root.attributes("-fullscreen", True)
-root.bind("<Escape>", lambda e: root.destroy())
-app = ZeroTouchKiosk(root)
+app = ZeroTouchFoodKiosk(root)
 root.mainloop()
