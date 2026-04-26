@@ -4,10 +4,9 @@ import time
 
 from tracking.hand_tracker import detect_hand, draw_hand
 from gestures.pinch import is_pinch
-from gestures.dwell import update_dwell
 from gestures.swipe import detect_swipe
-from controller.actions import move_cursor, click, double_click, swipe_action
-from config import DWELL_TIME, ACTION_COOLDOWN, FIST_HOLD_TIME, SMOOTHING
+from controller.actions import move_cursor, click, swipe_action
+from config import FIST_HOLD_TIME
 from gestures.activation import is_open_palm
 from gestures.deactivation import is_fist
 
@@ -19,8 +18,6 @@ screen_w, screen_h = pyautogui.size()
 
 pinch_lock_x, pinch_lock_y = None, None
 clicking = False
-dwell_start = None
-last_action_time = 0
 
 # เริ่มต้น/ปิดระบบมือ
 system_active = False
@@ -55,7 +52,7 @@ while True:
             last_hand_seen = time.time()
 
             if system_active:
-                if is_fist(handLms) and not is_pinch(thumb, index):
+                if is_fist(handLms) and not is_pinch(handLms):
                     if fist_start is None:
                         fist_start = time.time()
 
@@ -140,14 +137,14 @@ while True:
             smooth_screen_y = int(alpha * raw_y + (1 - alpha) * smooth_screen_y)
 
             # ===== Cursor Move =====
-            if not is_pinch(thumb, index):
+            if not is_pinch(handLms):
                 move_cursor(smooth_screen_x, smooth_screen_y)
 
             center_x = int(index.x * w)
             center_y = int(index.y * h)
 
             # ===== Pinch Click =====
-            if is_pinch(thumb, index):
+            if is_pinch(handLms):
                 if not clicking:
                     pinch_lock_x = smooth_screen_x
                     pinch_lock_y = smooth_screen_y
@@ -169,29 +166,13 @@ while True:
             if direction:
                 swipe_action(direction)
 
-            # ===== Dwell =====
-            movement = abs(center_x - prev_x) + abs(center_y - prev_y)
-
-            dwell_start, dwell_time = update_dwell(
-                dwell_start,
-                movement,
-                is_swiping
-            )
-
-            now = time.time()
-
-            if dwell_time > DWELL_TIME and now - last_action_time > ACTION_COOLDOWN:
-                double_click()
-                last_action_time = now
-                dwell_start = None
-
             prev_x, prev_y = center_x, center_y
 
             # ===== UI =====
             cv2.circle(img, (center_x, center_y), 20, (0, 255, 0), 2)
             cv2.putText(
                 img,
-                f"Dwell: {round(dwell_time, 1)}s",
+                "Cursor",
                 (center_x - 40, center_y - 30),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.5,
