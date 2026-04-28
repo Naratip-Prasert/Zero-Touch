@@ -13,7 +13,13 @@ from gestures.deactivation import is_fist
 pyautogui.PAUSE = 0
 pyautogui.FAILSAFE = False
 
-cap = cv2.VideoCapture("http://192.168.1.178:4747/video")
+CAMERA_URL = "http://192.168.1.179:4747/video"
+
+cap = cv2.VideoCapture(CAMERA_URL)
+cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+cap.set(cv2.CAP_PROP_FPS, 15)
 screen_w, screen_h = pyautogui.size()
 
 pinch_lock_x, pinch_lock_y = None, None
@@ -30,15 +36,16 @@ swipe_cooldown = 0
 smooth_screen_x, smooth_screen_y = 0, 0
 
 while True:
+    for _ in range(3):
+        cap.grab()
+
     ret, frame = cap.read()
+
     if not ret:
         print("No frame")
-        break
+        continue
 
-    cv2.imshow("Test Cam", frame)
-
-    if cv2.waitKey(1) == 27:
-        break
+    frame = cv2.resize(frame, (640, 480))
 
 
     img = cv2.flip(frame, 1)
@@ -204,7 +211,9 @@ while True:
                 2
             )
 
-    cv2.imshow("Zero Touch", img)
+    preview = cv2.resize(img, (480, 360))
+    cv2.imshow("Camera Preview", preview)
+    cv2.moveWindow("Camera Preview", 20, 20)
 
     if cv2.waitKey(1) & 0xFF == 27:
         break

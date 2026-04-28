@@ -266,8 +266,17 @@ class ZeroTouchFoodKiosk:
         )
         back.pack(side="right", padx=150, pady=20)
 
-        body = tk.Frame(self.root, bg="#f5f5f5")
-        body.pack(fill="both", expand=True, padx=60, pady=40)
+        content = tk.Frame(self.root, bg="#f5f5f5")
+        content.pack(fill="both", expand=True, padx=60, pady=40)
+        
+        scroll_area = tk.Frame(content)
+        scroll_area.pack(fill="both", expand=True)
+
+        body = self.make_scroll_area(scroll_area)
+
+        # ปุ่มล่างแยกออกมา
+        bottom = tk.Frame(content, bg="#f5f5f5")
+        bottom.pack(fill="x", pady=20)
 
         if not self.cart:
             empty = tk.Label(
