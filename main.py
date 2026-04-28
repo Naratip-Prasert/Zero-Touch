@@ -10,16 +10,43 @@ from config import FIST_HOLD_TIME
 from gestures.activation import is_open_palm
 from gestures.deactivation import is_fist
 
+def init_camera(source):
+    if isinstance(source, int):
+        cap = cv2.VideoCapture(source, cv2.CAP_DSHOW)
+    else:
+        cap = cv2.VideoCapture(source)
+
+    cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+    cap.set(cv2.CAP_PROP_FPS, 15)
+
+    return cap
+screen_w, screen_h = pyautogui.size()
+
 pyautogui.PAUSE = 0
 pyautogui.FAILSAFE = False
 
-CAMERA_URL = "http://192.168.1.179:4747/video"
+CAMERA_PHONE = "http://192.168.1.178:4747/video"
+CAMERA_PC = 0
 
-cap = cv2.VideoCapture(CAMERA_URL)
-cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-cap.set(cv2.CAP_PROP_FPS, 15)
+current_source = CAMERA_PHONE
+cap = init_camera(current_source)
+
+def switch_camera():
+    global cap, current_source
+
+    cap.release()
+
+    if current_source == CAMERA_PHONE:
+        current_source = CAMERA_PC
+    else:
+        current_source = CAMERA_PHONE
+
+    cap = init_camera(current_source)
+
+    print(f"Switched to: {current_source}")
+
 screen_w, screen_h = pyautogui.size()
 
 pinch_lock_x, pinch_lock_y = None, None
@@ -215,8 +242,12 @@ while True:
     cv2.imshow("Camera Preview", preview)
     cv2.moveWindow("Camera Preview", 20, 20)
 
-    if cv2.waitKey(1) & 0xFF == 27:
+    key = cv2.waitKey(1) & 0xFF
+
+    if key == 27:  # ESC
         break
+    elif key == ord('c'):  # กด C เพื่อสลับกล้อง
+        switch_camera()
 
 cap.release()
 cv2.destroyAllWindows()
