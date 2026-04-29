@@ -20,11 +20,38 @@ These landmarks are used to detect gestures, which are mapped to mouse and keybo
 
 ## Usage
 
-Install:
-- pip install mediapipe==0.10.11
-- pip install opencv-python pyautogui numpy
----
-RUN: 
-- python main.py
-- python kiosk_app.py
----
+### Install:
+```bash
+python main.py
+python kiosk_app.py
+```
+
+### Run
+```bash
+pip install mediapipe==0.10.11
+pip install opencv-python pyautogui numpy
+```
+
+### Camera Setup
+
+You can use either a built-in webcam or a phone/iPad as an external webcam.
+
+For phone/iPad camera, this project is tested with **Iriun Webcam**.
+
+Steps:
+1. Install **Iriun Webcam** on your phone/iPad.
+2. Install **Iriun Webcam client** on your computer.
+3. Connect the phone/iPad to the computer using USB.
+4. Open Iriun Webcam on both devices.
+5. Run the project.
+
+### Notes
+
+If the phone camera is not detected, change the camera index in `config.py`:
+
+```python
+CAMERA_PC = 0
+CAMERA_PHONE = 1
+```
+
+Try changing `CAMERA_PHONE` to `2` or `3` if needed.
