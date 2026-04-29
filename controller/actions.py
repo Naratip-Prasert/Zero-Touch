@@ -1,21 +1,26 @@
 import pyautogui
 
+pyautogui.PAUSE = 0
+pyautogui.FAILSAFE = False
+
+
 def move_cursor(x, y):
-    pyautogui.moveTo(x, y, duration=0)
+    pyautogui.moveTo(x, y)
+
 
 def click():
     pyautogui.click()
 
+
 def double_click():
     pyautogui.doubleClick()
 
+
 def swipe_action(direction):
+    SCROLL_AMOUNT = 400
+
     if direction == "down":
-        pyautogui.scroll(-500)
-        # ถ้าจะใช้กับ TikTok/Shorts เปลี่ยนเป็น:
-        # pyautogui.press("down")
+        pyautogui.scroll(-SCROLL_AMOUNT)
 
     elif direction == "up":
-        pyautogui.scroll(500)
-        # ถ้าจะใช้กับ TikTok/Shorts เปลี่ยนเป็น:
-        # pyautogui.press("up")
+        pyautogui.scroll(SCROLL_AMOUNT)

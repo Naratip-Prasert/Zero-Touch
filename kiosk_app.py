@@ -104,6 +104,7 @@ class ZeroTouchFoodKiosk:
         self.sidebar_button(sidebar, "🍟 Combo", self.page_sets)
         self.sidebar_button(sidebar, "🛒 Cart", self.page_cart)
         self.sidebar_button(sidebar, "🏠 Home", self.create_home)
+        
 
         return content
 
@@ -213,10 +214,21 @@ class ZeroTouchFoodKiosk:
         frame = self.make_scroll_area(content)
 
         self.food_card(frame, "Cheese Burger", 89, "🍔")
-        self.food_card(frame, "Chicken Burger", 79, "🍔")
+        self.food_card(frame, "Chicken Burger", 79, "🍗")
         self.food_card(frame, "Double Beef Burger", 129, "🍔")
-        self.food_card(frame, "Fish Burger", 99, "🍔")
-        self.food_card(frame, "Spicy Burger", 109, "🍔")
+        self.food_card(frame, "Fish Burger", 99, "🍗")
+        self.food_card(frame, "Rat Burger", 139, "🍔")
+        self.food_card(frame, "Bear Burger", 109, "🍗")
+        self.food_card(frame, "Dog Burger", 129, "🍔")
+        self.food_card(frame, "Cat Burger", 139, "🍗")
+        self.food_card(frame, "Cheese Burger", 89, "🍔")
+        self.food_card(frame, "Chicken Burger", 79, "🍗")
+        self.food_card(frame, "Double Beef Burger", 129, "🍔")
+        self.food_card(frame, "Fish Burger", 99, "🍗")
+        self.food_card(frame, "Rat Burger", 139, "🍔")
+        self.food_card(frame, "Bear Burger", 109, "🍗")
+        self.food_card(frame, "Dog Burger", 129, "🍔")
+        self.food_card(frame, "Cat Burger", 139, "🍗")
 
     def page_drinks(self):
         content = self.layout("DRINKS")
@@ -226,11 +238,33 @@ class ZeroTouchFoodKiosk:
         self.food_card(frame, "Sprite", 35, "🥤")
         self.food_card(frame, "Orange Juice", 45, "🧃")
         self.food_card(frame, "Water", 20, "💧")
+        self.food_card(frame, "Waterr", 20, "🥤")
+        self.food_card(frame, "Waterrr", 20, "💧")
+        self.food_card(frame, "Waterrrr", 20, "🥤")
+        self.food_card(frame, "Waterrrrr", 20, "💧")
+        self.food_card(frame, "Coke", 35, "🥤")
+        self.food_card(frame, "Sprite", 35, "🥤")
+        self.food_card(frame, "Orange Juice", 45, "🧃")
+        self.food_card(frame, "Water", 20, "💧")
+        self.food_card(frame, "Waterr", 20, "🥤")
+        self.food_card(frame, "Waterrr", 20, "💧")
+        self.food_card(frame, "Waterrrr", 20, "🥤")
+        self.food_card(frame, "Waterrrrr", 20, "💧")
 
     def page_sets(self):
         content = self.layout("COMBO SETS")
         frame = self.make_scroll_area(content)
 
+        self.food_card(frame, "Burger Set", 139, "🍔")
+        self.food_card(frame, "Chicken Set", 149, "🍗")
+        self.food_card(frame, "Family Set", 299, "👨‍👩‍👧")
+        self.food_card(frame, "Snack Set", 99, "🍟")
+        self.food_card(frame, "Party Set", 399, "🎉")
+        self.food_card(frame, "Burger Set", 139, "🍔")
+        self.food_card(frame, "Chicken Set", 149, "🍗")
+        self.food_card(frame, "Family Set", 299, "👨‍👩‍👧")
+        self.food_card(frame, "Snack Set", 99, "🍟")
+        self.food_card(frame, "Party Set", 399, "🎉")
         self.food_card(frame, "Burger Set", 139, "🍔")
         self.food_card(frame, "Chicken Set", 149, "🍗")
         self.food_card(frame, "Family Set", 299, "👨‍👩‍👧")

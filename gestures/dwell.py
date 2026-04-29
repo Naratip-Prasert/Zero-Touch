@@ -11,5 +11,9 @@ def update_dwell(dwell_start, movement, is_swiping):
     else:
         dwell_start = None
 
-    dwell_time = time.time() - dwell_start if dwell_start else 0
+    if dwell_start is not None:
+        dwell_time = time.time() - dwell_start
+    else:
+        dwell_time = 0
+
     return dwell_start, dwell_time

@@ -1,16 +1,15 @@
+def is_finger_extended(lm, tip_id, pip_id):
+    return lm[tip_id].y < lm[pip_id].y
+
+
 def is_open_palm(handLms):
-    fingers = []
+    lm = handLms.landmark
 
-    # index finger
-    fingers.append(handLms.landmark[8].y < handLms.landmark[6].y)
-
-    # middle finger
-    fingers.append(handLms.landmark[12].y < handLms.landmark[10].y)
-
-    # ring finger
-    fingers.append(handLms.landmark[16].y < handLms.landmark[14].y)
-
-    # pinky
-    fingers.append(handLms.landmark[20].y < handLms.landmark[18].y)
+    fingers = [
+        is_finger_extended(lm, 8, 6),    # index
+        is_finger_extended(lm, 12, 10),  # middle
+        is_finger_extended(lm, 16, 14),  # ring
+        is_finger_extended(lm, 20, 18),  # pinky
+    ]
 
     return sum(fingers) >= 4

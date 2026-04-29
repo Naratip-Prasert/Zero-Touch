@@ -1,55 +1,28 @@
 import cv2
 import pyautogui
 import time
-import platform
 
 from tracking.hand_tracker import detect_hand, draw_hand
+from tracking.camera import init_camera, switch_camera
 from gestures.pinch import is_pinch
 from gestures.swipe import detect_swipe
 from controller.actions import move_cursor, click, swipe_action
-from config import FIST_HOLD_TIME
+from controller.mapping import map_to_screen
+from controller.smoothing import smooth_move
+from config import FIST_HOLD_TIME,FRAME_HEIGHT, FRAME_WIDTH
 from gestures.activation import is_open_palm
 from gestures.deactivation import is_fist
 
-def init_camera(source):
-    if isinstance(source, int):
-        if platform.system() == "Windows":
-            cap = cv2.VideoCapture(source, cv2.CAP_DSHOW)
-        else:
-            cap = cv2.VideoCapture(source)  # Mac ใช้แบบนี้
-    else:
-        cap = cv2.VideoCapture(source)
-
-    cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-    cap.set(cv2.CAP_PROP_FPS, 15)
-
-    return cap
 screen_w, screen_h = pyautogui.size()
 
 pyautogui.PAUSE = 0
 pyautogui.FAILSAFE = False
 
-CAMERA_PHONE = "http://10.201.217.42:4747/video"
+CAMERA_PHONE = 1
 CAMERA_PC = 0
 
 current_source = CAMERA_PC
 cap = init_camera(current_source)
-
-def switch_camera():
-    global cap, current_source
-
-    cap.release()
-
-    if current_source == CAMERA_PHONE:
-        current_source = CAMERA_PC
-    else:
-        current_source = CAMERA_PHONE
-
-    cap = init_camera(current_source)
-
-    print(f"Switched to: {current_source}")
 
 screen_w, screen_h = pyautogui.size()
 
@@ -76,7 +49,7 @@ while True:
         print("No frame")
         continue
 
-    frame = cv2.resize(frame, (640, 480))
+    frame = cv2.resize(frame, (FRAME_WIDTH, FRAME_HEIGHT))
 
 
     img = cv2.flip(frame, 1)
@@ -163,22 +136,13 @@ while True:
 
                 continue
 
-            raw_x = int(index.x * screen_w)
-            raw_y = int(index.y * screen_h)
-
-            # วัดความเร็วการเคลื่อนที่
-            speed = abs(raw_x - smooth_screen_x) + abs(raw_y - smooth_screen_y)
-
-            # ปรับ smoothing ตาม speed
-            if speed > 50:
-                alpha = 0.5   # เร็ว
-            elif speed > 20:
-                alpha = 0.35  # กลาง
-            else:
-                alpha = 0.2   # นิ่ง
-
-            smooth_screen_x = int(alpha * raw_x + (1 - alpha) * smooth_screen_x)
-            smooth_screen_y = int(alpha * raw_y + (1 - alpha) * smooth_screen_y)
+            raw_x, raw_y = map_to_screen(index, screen_w, screen_h)
+            smooth_screen_x, smooth_screen_y = smooth_move(
+                raw_x,
+                raw_y,
+                smooth_screen_x,
+                smooth_screen_y
+            )
 
             # ===== Cursor Move =====
             if not is_pinch(handLms):
@@ -250,8 +214,13 @@ while True:
 
     if key == 27:  # ESC
         break
-    elif key == ord('c'):  # กด C เพื่อสลับกล้อง
-        switch_camera()
+    elif key == ord('c'):
+        cap, current_source = switch_camera(
+            cap,
+            current_source,
+            CAMERA_PC,
+            CAMERA_PHONE
+        )
 
 cap.release()
 cv2.destroyAllWindows()
