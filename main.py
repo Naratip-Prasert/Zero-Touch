@@ -1,6 +1,7 @@
 import cv2
 import pyautogui
 import time
+import platform
 
 from tracking.hand_tracker import detect_hand, draw_hand
 from gestures.pinch import is_pinch
@@ -12,7 +13,10 @@ from gestures.deactivation import is_fist
 
 def init_camera(source):
     if isinstance(source, int):
-        cap = cv2.VideoCapture(source, cv2.CAP_DSHOW)
+        if platform.system() == "Windows":
+            cap = cv2.VideoCapture(source, cv2.CAP_DSHOW)
+        else:
+            cap = cv2.VideoCapture(source)  # Mac ใช้แบบนี้
     else:
         cap = cv2.VideoCapture(source)
 
