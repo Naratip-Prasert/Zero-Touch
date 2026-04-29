@@ -27,10 +27,10 @@ screen_w, screen_h = pyautogui.size()
 pyautogui.PAUSE = 0
 pyautogui.FAILSAFE = False
 
-CAMERA_PHONE = "http://192.168.1.178:4747/video"
+CAMERA_PHONE = "http://10.201.217.42:4747/video"
 CAMERA_PC = 0
 
-current_source = CAMERA_PHONE
+current_source = CAMERA_PC
 cap = init_camera(current_source)
 
 def switch_camera():
