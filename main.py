@@ -12,6 +12,7 @@ from controller.smoothing import smooth_move
 from config import FIST_HOLD_TIME,FRAME_HEIGHT, FRAME_WIDTH
 from gestures.activation import is_open_palm
 from gestures.deactivation import is_fist
+from gestures.ai_gesture import predict_gesture
 
 screen_w, screen_h = pyautogui.size()
 
@@ -28,6 +29,9 @@ screen_w, screen_h = pyautogui.size()
 
 pinch_lock_x, pinch_lock_y = None, None
 clicking = False
+
+gesture_count = 0
+last_gesture = None
 
 # เริ่มต้น/ปิดระบบมือ
 system_active = False
@@ -62,6 +66,9 @@ while True:
         for handLms in result.multi_hand_landmarks:
             draw_hand(img, handLms)
 
+            gesture = predict_gesture(handLms)
+            pinching = is_pinch(handLms)
+
             thumb = handLms.landmark[4]
             index = handLms.landmark[8]
             
@@ -69,7 +76,7 @@ while True:
             last_hand_seen = time.time()
 
             if system_active:
-                if is_fist(handLms) and not is_pinch(handLms):
+                if is_fist(handLms) and not pinching:
                     if fist_start is None:
                         fist_start = time.time()
 
@@ -144,15 +151,16 @@ while True:
                 smooth_screen_y
             )
 
+
             # ===== Cursor Move =====
-            if not is_pinch(handLms):
+            if not pinching:
                 move_cursor(smooth_screen_x, smooth_screen_y)
 
             center_x = int(index.x * w)
             center_y = int(index.y * h)
 
             # ===== Pinch Click =====
-            if is_pinch(handLms):
+            if pinching:
                 if not clicking:
                     pinch_lock_x = smooth_screen_x
                     pinch_lock_y = smooth_screen_y
@@ -164,6 +172,26 @@ while True:
             else:
                 clicking = False
                 pinch_lock_x, pinch_lock_y = None, None
+                
+            if system_active:
+                if gesture == "fist" and is_fist(handLms) and not pinching:
+                    if fist_start is None:
+                        fist_start = time.time()
+
+                        fist_time = time.time() - fist_start
+
+                        if fist_time > FIST_HOLD_TIME:
+                            system_active = False
+                            fist_start = None
+                            activation_start = None
+                            dwell_start = None
+                            clicking = False
+                            continue
+                else:
+                    fist_start = None
+                
+            elif gesture == "open" and is_open_palm(handLms):
+                system_active = True
 
             # ===== Swipe =====
             delta_y = center_y - prev_y
