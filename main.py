@@ -123,9 +123,7 @@ while True:
             # ===== Activation Logic =====
             active_gesture = is_open_palm(handLms)
 
-            if not calibration.finished:
-                calibration.update(handLms)
-
+            if not system_active:
                 if active_gesture:
                     if activation_start is None:
                         activation_start = time.time()
@@ -144,25 +142,19 @@ while True:
 
                     if activation_time > 3:
                         system_active = True
-                        calibration.finished = True
                         activation_start = None
-
                 else:
                     activation_start = None
 
                 continue
 
-            raw_x, raw_y = map_to_screen(index, screen_w, screen_h)
-            smooth_screen_x, smooth_screen_y = smooth_move(
-                raw_x,
-                raw_y,
-                smooth_screen_x,
-                smooth_screen_y
-            )
-
-
             # ===== Cursor Move =====
             if not pinching:
+                raw_x, raw_y = map_to_screen(index, screen_w, screen_h)
+                smooth_screen_x, smooth_screen_y = smooth_move(
+                    raw_x, raw_y,
+                    smooth_screen_x, smooth_screen_y
+                )
                 last_cursor_x = smooth_screen_x
                 last_cursor_y = smooth_screen_y
 
@@ -182,7 +174,7 @@ while True:
 
                     clicking = True
             else:
-                clicking = False
+                clicking = False    
                 pinch_lock_x, pinch_lock_y = None, None
                 
             if system_active:
@@ -190,20 +182,16 @@ while True:
                     if fist_start is None:
                         fist_start = time.time()
 
-                        fist_time = time.time() - fist_start
+                    fist_time = time.time() - fist_start
 
-                        if fist_time > FIST_HOLD_TIME:
-                            system_active = False
-                            fist_start = None
-                            activation_start = None
-                            dwell_start = None
-                            clicking = False
-                            continue
+                    if fist_time > FIST_HOLD_TIME:
+                        system_active = False
+                        fist_start = None
+                        activation_start = None
+                        clicking = False
+                        continue
                 else:
                     fist_start = None
-                
-            elif gesture == "open" and is_open_palm(handLms):
-                system_active = True
 
             # ===== Swipe =====
             delta_y = center_y - prev_y
