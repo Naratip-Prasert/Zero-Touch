@@ -37,3 +37,9 @@ SMOOTHING_FAST = 0.5
 # ===== Preview UI =====
 PREVIEW_WIDTH = 480
 PREVIEW_HEIGHT = 360
+
+# ===== Smart Cursor =====
+SNAP_DISTANCE = 150
+
+# ===== CALIBRATION =====
+CALIBRATION_TIME = 3.0

@@ -6,13 +6,15 @@ from tracking.hand_tracker import detect_hand, draw_hand
 from tracking.camera import init_camera, switch_camera
 from gestures.pinch import is_pinch
 from gestures.swipe import detect_swipe
+from gestures.calibration import GestureCalibration
+from gestures.deactivation import is_fist
+from gestures.ai_gesture import predict_gesture
+from gestures.activation import is_open_palm
 from controller.actions import move_cursor, click, swipe_action
 from controller.mapping import map_to_screen
 from controller.smoothing import smooth_move
-from config import FIST_HOLD_TIME,FRAME_HEIGHT, FRAME_WIDTH
-from gestures.activation import is_open_palm
-from gestures.deactivation import is_fist
-from gestures.ai_gesture import predict_gesture
+from config import CALIBRATION_TIME, FIST_HOLD_TIME,FRAME_HEIGHT, FRAME_WIDTH
+from ui.overlay import draw_status, draw_cursor
 
 screen_w, screen_h = pyautogui.size()
 
@@ -42,6 +44,10 @@ fist_start = None
 prev_x, prev_y = 0, 0
 swipe_cooldown = 0
 smooth_screen_x, smooth_screen_y = 0, 0
+last_cursor_x, last_cursor_y = 0, 0
+
+calibration = GestureCalibration(duration=CALIBRATION_TIME)
+last_time = time.time()
 
 while True:
     for _ in range(3):
@@ -117,7 +123,9 @@ while True:
             # ===== Activation Logic =====
             active_gesture = is_open_palm(handLms)
 
-            if not system_active:
+            if not calibration.finished:
+                calibration.update(handLms)
+
                 if active_gesture:
                     if activation_start is None:
                         activation_start = time.time()
@@ -136,6 +144,7 @@ while True:
 
                     if activation_time > 3:
                         system_active = True
+                        calibration.finished = True
                         activation_start = None
 
                 else:
@@ -154,16 +163,19 @@ while True:
 
             # ===== Cursor Move =====
             if not pinching:
-                move_cursor(smooth_screen_x, smooth_screen_y)
+                last_cursor_x = smooth_screen_x
+                last_cursor_y = smooth_screen_y
 
+                move_cursor(last_cursor_x, last_cursor_y)
+                
             center_x = int(index.x * w)
             center_y = int(index.y * h)
 
             # ===== Pinch Click =====
             if pinching:
                 if not clicking:
-                    pinch_lock_x = smooth_screen_x
-                    pinch_lock_y = smooth_screen_y
+                    pinch_lock_x = last_cursor_x
+                    pinch_lock_y = last_cursor_y
 
                     move_cursor(pinch_lock_x, pinch_lock_y)
                     click()
@@ -205,16 +217,8 @@ while True:
             prev_x, prev_y = center_x, center_y
 
             # ===== UI =====
-            cv2.circle(img, (center_x, center_y), 20, (0, 255, 0), 2)
-            cv2.putText(
-                img,
-                "Cursor",
-                (center_x - 40, center_y - 30),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.5,
-                (0, 255, 0),
-                2
-            )
+            draw_cursor(img, center_x, center_y)
+  
 
     else:
         if time.time() - last_hand_seen > 3.0:
@@ -233,6 +237,12 @@ while True:
                 (0, 0, 255),
                 2
             )
+
+    now = time.time()
+    fps = 1 / (now - last_time)
+    last_time = now
+
+    draw_status(img, system_active, gesture if 'gesture' in locals() else None, fps)
 
     preview = cv2.resize(img, (480, 360))
     cv2.imshow("Camera Preview", preview)
