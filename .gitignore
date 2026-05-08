@@ -25,6 +25,7 @@ Thumbs.db
 *.avi
 *.png
 *.jpg
+*.csv
 
 # Jupyter
 .ipynb_checkpoints/

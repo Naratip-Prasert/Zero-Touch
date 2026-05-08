@@ -1,6 +1,10 @@
 import tkinter as tk
 import time
 import platform
+import csv
+import os
+import uuid
+from datetime import datetime
 
 # --- Modern Color Palette ---
 BG_COLOR = "#f3f4f6"        # พื้นหลังสีเทาอ่อน สบายตา
@@ -17,20 +21,50 @@ class ZeroTouchFoodKiosk:
         self.root = root
         self.root.title("Zero Touch Premium Kiosk")
         self.root.attributes("-fullscreen", True)
-        self.root.configure(bg=BG_COLOR)
+        # ซ่อน cursor ปกติ
+        self.root.config(cursor="none")
+        
+        self.root.attributes("-fullscreen", True)
+        # --- Kiosk cursor ---
+        self.kiosk_cursor = self.get_supported_cursor(
+            ["target", "tcross", "crosshair"]
+        )
 
+        self.root.config(cursor=self.kiosk_cursor)
+        
         self.cart = []
         self.last_action_time = time.time()
 
+        # --- Experiment / CSV state ---
+        self.csv_file = "kiosk_experiment_log.csv"
+        self.session_id = None
+        self.participant_name = ""
+        self.control_mode = tk.StringVar(value="Zero Touch")
+        self.order_start_time = None
+        self.order_start_world_time = ""
+        self.order_started = False
+        self.add_click_count = 0
+
         self.root.bind("<Escape>", lambda e: self.root.destroy())
 
-        self.create_home()
+        self.create_setup_page()
         self.check_idle()
+
+    def get_supported_cursor(self, candidates):
+        """เลือก cursor ที่เครื่องรองรับจริง เพื่อกัน TclError บน Windows"""
+        for cursor_name in candidates:
+            try:
+                self.root.config(cursor=cursor_name)
+                return cursor_name
+            except tk.TclError:
+                continue
+        return "arrow"
 
     # --- Utility Functions ---
     def clear_screen(self):
         for widget in self.root.winfo_children():
             widget.destroy()
+        self.root.config(cursor=self.kiosk_cursor)
 
     def update_activity(self):
         self.last_action_time = time.time()
@@ -38,6 +72,117 @@ class ZeroTouchFoodKiosk:
     def add_hover(self, widget, normal_bg, hover_bg, normal_fg="white", hover_fg="white"):
         widget.bind("<Enter>", lambda e: widget.config(bg=hover_bg, fg=hover_fg))
         widget.bind("<Leave>", lambda e: widget.config(bg=normal_bg, fg=normal_fg))
+
+    def now_text(self):
+        # เวลาจริงของโลก ตอนเก็บข้อมูล
+        return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    def get_elapsed(self):
+        if self.order_start_time is None:
+            return ""
+        return round(time.time() - self.order_start_time, 3)
+
+    def cart_total(self):
+        return sum(price for _, price in self.cart)
+
+    def ensure_csv_header(self):
+        file_exists = os.path.exists(self.csv_file)
+        if not file_exists:
+            with open(self.csv_file, "w", newline="", encoding="utf-8-sig") as f:
+                writer = csv.writer(f)
+                writer.writerow([
+                    "session_id",
+                    "participant_name",
+                    "control_mode",
+                    "start_world_time",
+                    "finish_world_time",
+                    "elapsed_seconds",
+                    "add_click_count",
+                    "final_cart_count",
+                    "cart_total",
+                ])
+
+    def save_summary_row(self):
+        # บันทึกแค่ 1 บรรทัดต่อผู้ทดลอง ตอนกด CONFIRM & PAY
+        self.ensure_csv_header()
+        with open(self.csv_file, "a", newline="", encoding="utf-8-sig") as f:
+            writer = csv.writer(f)
+            writer.writerow([
+                self.session_id,
+                self.participant_name,
+                self.control_mode.get(),
+                self.order_start_world_time,
+                self.now_text(),
+                self.get_elapsed(),
+                self.add_click_count,
+                len(self.cart),
+                self.cart_total(),
+            ])
+
+    def create_setup_page(self):
+        self.clear_screen()
+        self.root.configure(bg=BG_COLOR)
+        self.cart = []
+        self.order_start_time = None
+        self.order_start_world_time = ""
+        self.order_started = False
+        self.add_click_count = 0
+        self.session_id = str(uuid.uuid4())[:8]
+
+        box = tk.Frame(self.root, bg="white", highlightbackground="#e5e7eb", highlightthickness=2)
+        box.place(relx=0.5, rely=0.5, anchor="center", width=820, height=620)
+
+        tk.Label(box, text="🧪 KIOSK TEST SETUP", font=("Arial", 44, "bold"),
+                 fg=PRIMARY_RED, bg="white").pack(pady=(45, 20))
+
+        tk.Label(box, text="Select control mode", font=("Arial", 24, "bold"),
+                 fg=TEXT_DARK, bg="white").pack(pady=(10, 10))
+
+        mode_frame = tk.Frame(box, bg="white")
+        mode_frame.pack(pady=5)
+
+        for mode in ["Normal Mouse", "Zero Touch"]:
+            rb = tk.Radiobutton(
+                mode_frame, text=mode, value=mode, variable=self.control_mode,
+                font=("Arial", 22, "bold"), bg="white", fg=TEXT_DARK,
+                selectcolor=ACCENT_YELLOW, indicatoron=False, width=16, height=2,
+                relief="flat", bd=2
+            )
+            rb.pack(side="left", padx=15)
+
+        tk.Label(box, text="Participant name", font=("Arial", 24, "bold"),
+                 fg=TEXT_DARK, bg="white").pack(pady=(35, 10))
+
+        self.name_entry = tk.Entry(box, font=("Arial", 28), justify="center", relief="solid", bd=2)
+        self.name_entry.pack(ipady=10, ipadx=10, fill="x", padx=120)
+        self.name_entry.focus_set()
+
+        warning = tk.Label(box, text="", font=("Arial", 18, "bold"), fg="#ef4444", bg="white")
+        warning.pack(pady=10)
+
+        def continue_to_home():
+            name = self.name_entry.get().strip()
+            if not name:
+                warning.config(text="Please enter participant name first")
+                return
+            self.participant_name = name
+            self.create_home()
+
+        start_setup_btn = tk.Button(
+            box, text="CONTINUE TO START PAGE", command=continue_to_home,
+            font=("Arial", 28, "bold"), bg=PRIMARY_RED, fg="white",
+            relief="flat", pady=18, cursor=self.kiosk_cursor
+        )
+        start_setup_btn.pack(fill="x", padx=120, pady=(20, 10))
+        self.add_hover(start_setup_btn, PRIMARY_RED, PRIMARY_HOVER)
+
+    def start_order_timer(self):
+        self.cart = []
+        self.add_click_count = 0
+        self.order_start_time = time.time()
+        self.order_start_world_time = self.now_text()
+        self.order_started = True
+        self.page_burgers()
 
     # --- Pages ---
     def create_home(self):
@@ -65,10 +210,10 @@ class ZeroTouchFoodKiosk:
         subtitle.pack(pady=(0, 50))
 
         start_btn = tk.Button(
-            self.root, text="PINCH HERE TO START", command=self.page_burgers,
+            self.root, text="PINCH HERE TO START", command=self.start_order_timer,
             font=("Arial", 36, "bold"), bg=ACCENT_YELLOW, fg=TEXT_DARK,
             activebackground="white", activeforeground=TEXT_DARK,
-            relief="flat", width=22, height=2, cursor="hand2"
+            relief="flat", width=22, height=2, cursor=self.kiosk_cursor
         )
         start_btn.pack(pady=30)
         self.add_hover(start_btn, ACCENT_YELLOW, "white", TEXT_DARK, TEXT_DARK)
@@ -117,7 +262,7 @@ class ZeroTouchFoodKiosk:
         tk.Label(sidebar, bg="white").pack(fill="y", expand=True)
 
         self.sidebar_button(sidebar, "🛒 View Cart", self.page_cart, title_text == "YOUR ORDER", is_cart=True)
-        self.sidebar_button(sidebar, "🏠 Home / Cancel", self.create_home, is_cancel=True)
+        self.sidebar_button(sidebar, "🏠 End / New Tester", self.create_setup_page, is_cancel=True)
 
         return content
 
@@ -205,6 +350,7 @@ class ZeroTouchFoodKiosk:
 
     def add_to_cart(self, name, price):
         self.cart.append((name, price))
+        self.add_click_count += 1
         self.update_activity()
         self.show_added(name)
 
@@ -339,22 +485,27 @@ class ZeroTouchFoodKiosk:
         popup.after(1200, popup.destroy)
 
     def confirm_order(self):
+        final_time = self.get_elapsed()
+        final_total = self.cart_total()
+        final_add_click_count = self.add_click_count
+        self.save_summary_row()
+
         self.clear_screen()
         self.root.configure(bg=ADD_BTN)
 
         title = tk.Label(self.root, text="🎉 ORDER RECEIVED!", font=("Arial", 64, "bold"), fg="white", bg=ADD_BTN)
-        title.pack(pady=(200, 20))
+        title.pack(pady=(80, 20))
 
         queue = tk.Label(self.root, text="Your Queue No: 089", font=("Arial", 70, "bold"), fg=ACCENT_YELLOW, bg=ADD_BTN)
-        queue.pack(pady=40)
+        queue.pack(pady=20)
 
-        msg = tk.Label(self.root, text="Please proceed to the counter for payment.\nThank you for using Zero Touch Kiosk.", font=("Arial", 32), fg="white", bg=ADD_BTN)
-        msg.pack(pady=50)
+        msg = tk.Label(self.root, text=f"Please proceed to the counter for payment.\nTime used: {final_time} seconds | Add clicks: {final_add_click_count} | Total: {final_total} ฿", font=("Arial", 32), fg="white", bg=ADD_BTN)
+        msg.pack(pady=20)
 
         self.cart = []
 
         home_btn = tk.Button(
-            self.root, text="START NEW ORDER", command=self.create_home,
+            self.root, text="START NEW TESTER", command=self.create_setup_page,
             font=("Arial", 32, "bold"), bg="white", fg=ADD_BTN, relief="flat", width=20, pady=20
         )
         home_btn.pack(pady=80)
@@ -367,7 +518,7 @@ class ZeroTouchFoodKiosk:
     def check_idle(self):
         if time.time() - self.last_action_time > 60:
             self.cart = []
-            self.create_home()
+            self.create_setup_page()
             self.last_action_time = time.time()
         self.root.after(1000, self.check_idle)
 

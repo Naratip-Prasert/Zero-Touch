@@ -8,9 +8,9 @@ def detect_swipe(delta_y, last_swipe_time):
         return None, last_swipe_time
 
     if delta_y > SWIPE_THRESHOLD:
-        return "down", now
+        return "up", now
 
     elif delta_y < -SWIPE_THRESHOLD:
-        return "up", now
+        return "down", now
 
     return None, last_swipe_time
