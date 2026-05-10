@@ -4,7 +4,7 @@ import time
 
 from tracking.hand_tracker import detect_hand, draw_hand
 from tracking.camera import init_camera, switch_camera
-from gestures.pinch import is_pinch
+from gestures.pinch import is_pinch, pinch_preparing
 from gestures.swipe import detect_swipe
 from gestures.calibration import GestureCalibration
 from gestures.deactivation import is_fist
@@ -31,6 +31,7 @@ screen_w, screen_h = pyautogui.size()
 
 pinch_lock_x, pinch_lock_y = None, None
 clicking = False
+scroll_lock_until = 0
 
 gesture_count = 0
 last_gesture = None
@@ -149,21 +150,45 @@ while True:
                 continue
 
             # ===== Cursor Move =====
-            if not pinching:
-                raw_x, raw_y = map_to_screen(index, screen_w, screen_h)
-                smooth_screen_x, smooth_screen_y = smooth_move(
-                    raw_x, raw_y,
-                    smooth_screen_x, smooth_screen_y
+            preparing_pinch = pinch_preparing(handLms)
+
+            if not preparing_pinch:
+
+                # ===== Virtual Cursor Point =====
+                cursor_x = (index.x + thumb.x) / 2
+                cursor_y = (index.y + thumb.y) / 2
+
+                class CursorPoint:
+                    pass
+
+                cursor_point = CursorPoint()
+                cursor_point.x = cursor_x
+                cursor_point.y = cursor_y
+
+                raw_x, raw_y = map_to_screen(
+                    cursor_point,
+                    screen_w,
+                    screen_h
                 )
+
+                # smoothing
+                smooth_screen_x, smooth_screen_y = smooth_move(
+                    raw_x,
+                    raw_y,
+                    smooth_screen_x,
+                    smooth_screen_y
+                )
+
                 last_cursor_x = smooth_screen_x
                 last_cursor_y = smooth_screen_y
 
-                move_cursor(last_cursor_x, last_cursor_y)
-                
-            center_x = int(index.x * w)
-            center_y = int(index.y * h)
-
+                move_cursor(
+                    last_cursor_x,
+                    last_cursor_y
+                )
             # ===== Pinch Click =====
+            scroll_locked = time.time() < scroll_lock_until
+
             if pinching:
                 if not clicking:
                     pinch_lock_x = last_cursor_x
@@ -193,17 +218,22 @@ while True:
                 else:
                     fist_start = None
 
-            # ===== Swipe =====
-            delta_y = center_y - prev_y
-            direction, swipe_cooldown = detect_swipe(delta_y, swipe_cooldown)
 
-            is_swiping = direction is not None
+            center_x = int(index.x * w)
+            center_y = int(index.y * h)
+            # ===== Smooth Swipe Scroll =====
+            if not pinching:
 
-            if direction:
-                swipe_action(direction)
+                direction, swipe_cooldown = detect_swipe(
+                    center_y,
+                    swipe_cooldown
+                )
 
-            prev_x, prev_y = center_x, center_y
+                if direction:
 
+                    scroll_lock_until = time.time() + 1
+
+                    swipe_action(direction)
             # ===== UI =====
             draw_cursor(img, center_x, center_y)
   
