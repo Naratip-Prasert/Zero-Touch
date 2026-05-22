@@ -10,6 +10,7 @@ from gestures.calibration import GestureCalibration
 from gestures.deactivation import is_fist
 from gestures.ai_gesture import predict_gesture
 from gestures.activation import is_open_palm
+from gestures.zone_scroll import detect_zone_scroll
 from controller.actions import move_cursor, click, swipe_action
 from controller.mapping import map_to_screen
 from controller.smoothing import smooth_move
@@ -221,19 +222,26 @@ while True:
 
             center_x = int(index.x * w)
             center_y = int(index.y * h)
+            # ===== Zone Hold Scroll =====
+            if not preparing_pinch and not pinching:
+                scroll_direction = detect_zone_scroll(center_y, h)
+
+                if scroll_direction:
+                    scroll_lock_until = time.time() + 0.5
+                    swipe_action(scroll_direction)
             # ===== Smooth Swipe Scroll =====
-            if not pinching:
+            #if not pinching:
 
-                direction, swipe_cooldown = detect_swipe(
-                    center_y,
-                    swipe_cooldown
-                )
+             #   direction, swipe_cooldown = detect_swipe(
+              #      center_y,
+               #     swipe_cooldown
+                #)
 
-                if direction:
+                #if direction:
 
-                    scroll_lock_until = time.time() + 1
+                 #   scroll_lock_until = time.time() + 1
 
-                    swipe_action(direction)
+                  #  swipe_action(direction)
             # ===== UI =====
             draw_cursor(img, center_x, center_y)
   

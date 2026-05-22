@@ -43,3 +43,6 @@ SNAP_DISTANCE = 150
 
 # ===== CALIBRATION =====
 CALIBRATION_TIME = 3.0
+
+# ===== Zone Hold Scroll =====
+SCROLL_AMOUNT = 60

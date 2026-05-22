@@ -20,7 +20,7 @@ def pinch_preparing(handLms):
     hand_size = get_hand_size(handLms)
     pinch_dist = distance(thumb_tip, index_tip)
 
-    return pinch_dist < hand_size * 0.12
+    return pinch_dist < hand_size * 0.13
 
 def is_pinch(handLms):
     global pinch_frames
